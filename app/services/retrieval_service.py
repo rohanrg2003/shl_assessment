@@ -38,3 +38,9 @@ def semantic_search(query, top_k=10):
     ]
 def retrieve_assessments(query, top_k=10):
     return semantic_search(query, top_k)
+def keyword_search(query, top_k=10):
+    return semantic_search(query, top_k)
+
+
+def retrieve_assessments(query, top_k=10):
+    return semantic_search(query, top_k)
