@@ -1,8 +1,18 @@
 def detect_intent(messages):
 
-    latest_message = messages[-1]["content"].lower().strip()
+    if not messages:
+        return "CLARIFY"
+
+    latest_message = (
+        messages[-1]
+        .get("content", "")
+        .lower()
+        .strip()
+    )
 
     vague_phrases = [
+        "assessment",
+        "test",
         "need assessment",
         "need a test",
         "need an assessment",
@@ -30,18 +40,31 @@ def detect_intent(messages):
         "update"
     ]
 
-    # VAGUE / CLARIFICATION
-    if any(p in latest_message for p in vague_phrases):
+    # VERY SHORT VAGUE QUERY
+    if len(latest_message.split()) <= 4:
+        return "CLARIFY"
 
-        if len(latest_message.split()) <= 6:
+    # VAGUE PHRASES
+    if any(
+        p in latest_message
+        for p in vague_phrases
+    ):
+
+        if len(latest_message.split()) <= 8:
             return "CLARIFY"
 
     # COMPARISON
-    if any(word in latest_message for word in comparison_words):
+    if any(
+        word in latest_message
+        for word in comparison_words
+    ):
         return "COMPARE"
 
     # REFINE
-    if any(word in latest_message for word in refine_words):
+    if any(
+        word in latest_message
+        for word in refine_words
+    ):
         return "REFINE"
 
     return "RECOMMEND"

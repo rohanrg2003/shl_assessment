@@ -32,6 +32,19 @@ INJECTION_PATTERNS = [
 ]
 
 
+OFF_TOPIC_PATTERNS = [
+    "job offer letter",
+    "offer letter",
+    "legal",
+    "law",
+    "salary negotiation",
+    "employment law",
+    "write a resume",
+    "resume writing",
+    "interview questions"
+]
+
+
 def format_recommendations(recommendations):
 
     formatted = []
@@ -53,11 +66,39 @@ def format_recommendations(recommendations):
 
 def process_conversation(messages):
 
+    # EMPTY INPUT SAFETY
+    if not messages:
+
+        return {
+            "reply": (
+                "Please provide details about the "
+                "role or assessment requirements."
+            ),
+            "recommendations": [],
+            "end_of_conversation": False
+        }
+
     latest_message = messages[-1]["content"]
 
     latest_lower = latest_message.lower()
 
-    # PROMPT INJECTION / OFF-TOPIC
+    # OFF-TOPIC CHECK
+    if any(
+        pattern in latest_lower
+        for pattern in OFF_TOPIC_PATTERNS
+    ):
+
+        return {
+            "reply": (
+                "I can only assist with SHL assessment "
+                "recommendations, comparisons, and "
+                "assessment-related hiring guidance."
+            ),
+            "recommendations": [],
+            "end_of_conversation": False
+        }
+
+    # PROMPT INJECTION CHECK
     if any(
         pattern in latest_lower
         for pattern in INJECTION_PATTERNS
@@ -142,5 +183,6 @@ def process_conversation(messages):
             "recommendations": formatted_recommendations,
             "end_of_conversation": (
                 len(formatted_recommendations) > 0
+                or len(messages) >= 8
             )
         }

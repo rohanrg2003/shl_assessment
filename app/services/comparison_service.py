@@ -1,120 +1,64 @@
-from app.services.retrieval_service import keyword_search
+import json
 
-from groq import Groq
-import os
-from dotenv import load_dotenv
-from app.utils.test_type_mapper import map_test_type
-load_dotenv()
-
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
+from app.services.llm_service import (
+    generate_comparison_response
 )
 
 
+with open(
+    "app/data/shl_catalog.json",
+    "r",
+    encoding="utf-8"
+) as f:
+
+    catalog = json.load(f)
+
+
 def extract_assessment_names(query):
-    """
-    Extract assessment names from comparison query
-    """
 
     query = query.lower()
 
-    known_assessments = [
-        "opq",
-        "verify",
-        "verify g+",
-        "hipo",
-        "business communication",
-        "core java"
-    ]
-
     found = []
 
-    for item in known_assessments:
+    for item in catalog:
 
-        if item in query:
-            found.append(item)
+        name = item["name"].lower()
 
-    return found
+        short_words = [
+            word
+            for word in name.split()
+            if len(word) >= 2
+        ]
+
+        if any(
+            word in query
+            for word in short_words
+        ):
+
+            found.append(item["name"])
+
+    return list(set(found))[:3]
 
 
 def compare_assessments(query):
-    """
-    Compare SHL assessments
-    """
 
-    assessment_names = extract_assessment_names(query)
+    names = extract_assessment_names(query)
 
-    retrieved = []
+    matched = []
 
-    for name in assessment_names:
+    for item in catalog:
 
-        results = keyword_search(name, top_k=1)
+        if item["name"] in names:
 
-        if results:
-            retrieved.append(results[0])
+            matched.append(item)
 
-    if len(retrieved) < 2:
+    if len(matched) < 1:
 
-        return {
-            "reply": (
-                "I could not identify enough SHL assessments "
-                "to perform a comparison."
-            ),
-            "recommendations": [],
-            "end_of_conversation": False
-        }
+        return (
+            "I could not identify enough SHL "
+            "assessments to compare."
+        )
 
-    comparison_text = ""
-
-    for item in retrieved:
-
-        comparison_text += f"""
-        Name: {item.get('name', '')}
-        Description: {item.get('description', '')}
-        """
-
-    prompt = f"""
-    You are an SHL assessment expert.
-
-    Compare the following assessments.
-
-    Explain:
-    - primary purpose
-    - what each measures
-    - ideal use cases
-    - major differences
-
-    Keep response concise and recruiter-focused.
-
-    Assessments:
-    {comparison_text}
-    """
-
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        temperature=0.2
+    return generate_comparison_response(
+        matched
     )
-
-    formatted_recommendations = []
-
-    for item in retrieved:
-        formatted_recommendations.append({
-            "name": item.get("name", ""),
-            "url": item.get("link", ""),
-            "test_type": map_test_type(
-                item.get("name", ""),
-                item.get("description", "")
-            )
-        })
-
-    return {
-        "reply": response.choices[0].message.content.strip(),
-        "recommendations": formatted_recommendations,
-        "end_of_conversation": False
-    }
