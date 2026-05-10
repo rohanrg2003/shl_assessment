@@ -1,7 +1,8 @@
 from app.utils.intent_detector import detect_intent
 
+# CHANGE THIS IMPORT TO MATCH YOUR ACTUAL FUNCTION
 from app.services.recommendation_service import (
-    recommend_assessments
+    get_recommendations
 )
 
 from app.services.comparison_service import (
@@ -100,7 +101,7 @@ def process_conversation(messages):
     # REFINE FLOW
     elif intent == "REFINE":
 
-        recommendations = recommend_assessments(
+        recommendations = get_recommendations(
             messages
         )
 
@@ -130,7 +131,7 @@ def process_conversation(messages):
     # STANDARD RECOMMENDATION FLOW
     else:
 
-        recommendations = recommend_assessments(
+        recommendations = get_recommendations(
             messages
         )
 
