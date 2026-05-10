@@ -40,6 +40,20 @@ def detect_intent(messages):
         "update"
     ]
 
+    # REFINE FIRST
+    if any(
+        word in latest_message
+        for word in refine_words
+    ):
+        return "REFINE"
+
+    # COMPARISON
+    if any(
+        word in latest_message
+        for word in comparison_words
+    ):
+        return "COMPARE"
+
     # VERY SHORT VAGUE QUERY
     if len(latest_message.split()) <= 4:
         return "CLARIFY"
@@ -52,19 +66,5 @@ def detect_intent(messages):
 
         if len(latest_message.split()) <= 8:
             return "CLARIFY"
-
-    # COMPARISON
-    if any(
-        word in latest_message
-        for word in comparison_words
-    ):
-        return "COMPARE"
-
-    # REFINE
-    if any(
-        word in latest_message
-        for word in refine_words
-    ):
-        return "REFINE"
 
     return "RECOMMEND"
