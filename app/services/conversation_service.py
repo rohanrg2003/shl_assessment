@@ -52,8 +52,8 @@ def format_recommendations(recommendations):
     for item in recommendations:
 
         formatted.append({
-            "name": item.get("name", ""),
-            "url": item.get("url", ""),
+            "name": str(item.get("name", "")),
+            "url": str(item.get("url", "")),
             "test_type": map_test_type(
                 item.get("name", ""),
                 item.get("description", ""),

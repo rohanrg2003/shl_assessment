@@ -1,21 +1,33 @@
-def map_test_type(name, description="", keys=None):
+def map_test_type(name="", description="", keys=None):
 
-    if keys:
+    # SAFETY
+    if keys is None:
+        keys = []
 
-        if "Personality & Behavior" in keys:
+    # HANDLE STRING CASE
+    if isinstance(keys, str):
+        keys = [keys]
+
+    # CATEGORY MAPPING
+    for key in keys:
+
+        key_lower = key.lower()
+
+        if "personality" in key_lower:
             return "P"
 
-        if "Simulations" in keys:
+        if "simulation" in key_lower:
             return "S"
 
-        if "Ability & Aptitude" in keys:
+        if "ability" in key_lower:
             return "A"
 
-        if "Knowledge & Skills" in keys:
+        if "knowledge" in key_lower:
             return "K"
 
     text = f"{name} {description}".lower()
 
+    # FALLBACKS
     if any(word in text for word in [
         "personality",
         "behavior",
