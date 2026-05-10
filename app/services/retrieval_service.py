@@ -1,54 +1,18 @@
 import json
-import faiss
-import numpy as np
-from sentence_transformers import SentenceTransformer
 
-# Load embedding model
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# Load catalog
-with open("app/data/shl_catalog.json", "r", encoding="utf-8-sig") as f:
+with open("app/data/shl_catalog.json", "r", encoding="utf-8") as f:
     catalog = json.load(f)
 
-# Load FAISS index
-index = faiss.read_index("app/data/faiss_index.bin")
 
+def semantic_search(query, top_k=10):
 
-def retrieve_assessments(query, top_k=5):
-    """
-    Semantic search for relevant SHL assessments
-    """
+    query = query.lower()
 
-    # Convert query into embedding
-    query_embedding = model.encode([query])
-
-    query_embedding = np.array(query_embedding).astype("float32")
-
-    # Search FAISS
-    distances, indices = index.search(query_embedding, top_k)
-
-    results = []
-
-    for idx in indices[0]:
-        if idx < len(catalog):
-            results.append(catalog[idx])
-
-    return results
-
-
-def keyword_search(keyword, top_k=3):
-    """
-    Hybrid exact + fuzzy keyword search
-    """
-
-    keyword = keyword.lower()
-
-    exact_matches = []
-    partial_matches = []
+    scored_results = []
 
     for item in catalog:
 
-        name = item.get("name", "").lower()
+        score = 0
 
         searchable_text = f"""
         {item.get('name', '')}
@@ -56,18 +20,19 @@ def keyword_search(keyword, top_k=3):
         {' '.join(item.get('keys', []))}
         """.lower()
 
-        # PRIORITY 1 → exact name match
-        if keyword == name:
-            exact_matches.append(item)
+        for word in query.split():
 
-        # PRIORITY 2 → keyword inside assessment name
-        elif keyword in name:
-            partial_matches.append(item)
+            if word in searchable_text:
+                score += 1
 
-        # PRIORITY 3 → keyword inside metadata
-        elif keyword in searchable_text:
-            partial_matches.append(item)
+        if score > 0:
+            scored_results.append((score, item))
 
-    results = exact_matches + partial_matches
+    scored_results.sort(
+        key=lambda x: x[0],
+        reverse=True
+    )
 
-    return results[:top_k]
+    return [
+        item for _, item in scored_results[:top_k]
+    ]
