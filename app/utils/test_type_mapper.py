@@ -1,60 +1,43 @@
-def map_test_type(name, description=""):
-    """
-    Dynamically map SHL assessment type
-    """
+def map_test_type(name, description="", keys=None):
+
+    if keys:
+
+        if "Personality & Behavior" in keys:
+            return "P"
+
+        if "Simulations" in keys:
+            return "S"
+
+        if "Ability & Aptitude" in keys:
+            return "A"
+
+        if "Knowledge & Skills" in keys:
+            return "K"
 
     text = f"{name} {description}".lower()
 
-    # Personality
-    personality_keywords = [
-        "opq",
+    if any(word in text for word in [
         "personality",
         "behavior",
-        "motivation",
-        "occupational personality"
-    ]
+        "opq",
+        "motivation"
+    ]):
+        return "P"
 
-    # Cognitive
-    cognitive_keywords = [
-        "verify",
+    if any(word in text for word in [
+        "simulation",
+        "scenario",
+        "customer"
+    ]):
+        return "S"
+
+    if any(word in text for word in [
         "ability",
         "reasoning",
-        "numerical",
-        "deductive",
-        "inductive",
-        "cognitive"
-    ]
+        "cognitive",
+        "aptitude",
+        "verify"
+    ]):
+        return "A"
 
-    # Simulations
-    simulation_keywords = [
-        "simulation",
-        "customer service",
-        "virtual",
-        "scenario",
-        "role play"
-    ]
-
-    # Technical / knowledge
-    technical_keywords = [
-        "java",
-        "python",
-        "sql",
-        "aws",
-        "technical",
-        "coding",
-        "framework"
-    ]
-
-    if any(word in text for word in personality_keywords):
-        return "P"
-    if any(word in text for word in simulation_keywords):
-        return "S"
-    
-    if any(word in text for word in cognitive_keywords):
-        return "C"
-
-    if any(word in text for word in technical_keywords):
-        return "K"
-
-    # Default fallback
     return "K"

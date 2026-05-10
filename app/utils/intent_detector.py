@@ -1,57 +1,47 @@
 def detect_intent(messages):
-    """
-    Detect conversational intent
-    """
 
-    latest_message = messages[-1]["content"].lower()
+    latest_message = messages[-1]["content"].lower().strip()
 
-    # REFUSAL
-    refusal_keywords = [
-        "ignore previous instructions",
-        "legal advice",
-        "financial advice",
-        "medical advice"
+    vague_phrases = [
+        "need assessment",
+        "need a test",
+        "need an assessment",
+        "i need an assessment",
+        "help me hire",
+        "what tests",
+        "show me assessments",
+        "looking for assessment",
+        "looking for test"
     ]
 
-    if any(word in latest_message for word in refusal_keywords):
-        return "REFUSE"
-
-    # COMPARISON
-    comparison_keywords = [
+    comparison_words = [
         "compare",
         "difference between",
         "vs",
         "versus"
     ]
 
-    if any(word in latest_message for word in comparison_keywords):
+    refine_words = [
+        "also",
+        "include",
+        "add",
+        "instead",
+        "change",
+        "update"
+    ]
+
+    # VAGUE / CLARIFICATION
+    if any(p in latest_message for p in vague_phrases):
+
+        if len(latest_message.split()) <= 6:
+            return "CLARIFY"
+
+    # COMPARISON
+    if any(word in latest_message for word in comparison_words):
         return "COMPARE"
 
-    # REFINEMENT
-    refinement_keywords = [
-        "also",
-        "add",
-        "include",
-        "instead",
-        "replace"
-    ]
-
-    if any(word in latest_message for word in refinement_keywords):
+    # REFINE
+    if any(word in latest_message for word in refine_words):
         return "REFINE"
 
-    # VERY VAGUE QUERIES ONLY
-    vague_phrases = [
-        "need assessment",
-        "need a test",
-        "need an assessment"
-    ]
-
-    if latest_message.strip() in vague_phrases:
-        return "CLARIFY"
-
-    # VERY SHORT queries
-    if len(latest_message.split()) <= 2:
-        return "CLARIFY"
-
-    # DEFAULT
     return "RECOMMEND"

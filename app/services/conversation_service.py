@@ -1,101 +1,154 @@
 from app.utils.intent_detector import detect_intent
-from app.utils.constraint_extractor import extract_constraints
 
 from app.services.recommendation_service import (
-    generate_recommendations
+    recommend_assessments
 )
 
-from app.services.llm_service import generate_response
 from app.services.comparison_service import (
     compare_assessments
 )
-from app.utils.test_type_mapper import map_test_type
 
-def build_conversation_context(messages):
-    """
-    Reconstruct meaningful conversation context
-    """
+from app.services.llm_service import (
+    generate_response
+)
 
-    user_messages = []
+from app.utils.test_type_mapper import (
+    map_test_type
+)
 
-    for msg in messages:
 
-        if msg["role"] == "user":
-            user_messages.append(msg["content"])
+INJECTION_PATTERNS = [
+    "ignore previous instructions",
+    "ignore your rules",
+    "system prompt",
+    "you are now",
+    "act as",
+    "forget instructions",
+    "pretend you are"
+]
 
-    return " ".join(user_messages)
+
+def format_recommendations(recommendations):
+
+    formatted = []
+
+    for item in recommendations:
+
+        formatted.append({
+            "name": item.get("name", ""),
+            "url": item.get("url", ""),
+            "test_type": map_test_type(
+                item.get("name", ""),
+                item.get("description", ""),
+                item.get("keys", [])
+            )
+        })
+
+    return formatted
 
 
 def process_conversation(messages):
-    """
-    Main orchestration pipeline
-    """
 
-    # Build full conversation context
-    conversation_context = build_conversation_context(messages)
+    latest_message = messages[-1]["content"]
 
-    # Latest user message
-    latest_query = messages[-1]["content"]
+    latest_lower = latest_message.lower()
 
-    # Detect intent
+    # PROMPT INJECTION / OFF-TOPIC
+    if any(
+        pattern in latest_lower
+        for pattern in INJECTION_PATTERNS
+    ):
+
+        return {
+            "reply": (
+                "I can only assist with SHL assessment "
+                "recommendations, comparisons, and "
+                "hiring-related evaluation guidance."
+            ),
+            "recommendations": [],
+            "end_of_conversation": False
+        }
+
     intent = detect_intent(messages)
-    # Comparison handling
-    if intent == "COMPARE":
 
-        return compare_assessments(conversation_context)
-    # Clarification handling
+    # CLARIFICATION FLOW
     if intent == "CLARIFY":
 
         return {
             "reply": (
                 "Could you share more details about the role, "
-                "required skills, seniority level, or assessment goals?"
+                "required skills, seniority level, or "
+                "assessment goals?"
             ),
             "recommendations": [],
             "end_of_conversation": False
         }
 
-    # Refusal handling
-    if intent == "REFUSE":
+    # COMPARISON FLOW
+    elif intent == "COMPARE":
+
+        response_text = compare_assessments(
+            latest_message
+        )
 
         return {
-            "reply": (
-                "I can only assist with SHL assessment "
-                "recommendations, comparisons, and hiring-related evaluation guidance."
-            ),
+            "reply": response_text,
             "recommendations": [],
-            "end_of_conversation": False
+            "end_of_conversation": True
         }
 
-    # Extract constraints from FULL conversation
-    constraints = extract_constraints(messages)
+    # REFINE FLOW
+    elif intent == "REFINE":
 
-    # Generate recommendations using FULL context
-    recommendations = generate_recommendations(
-        query=conversation_context,
-        constraints=constraints
-    )
+        recommendations = recommend_assessments(
+            messages
+        )
 
-    # Generate conversational response
-    response_text = generate_response(
-        query=conversation_context,
-        recommendations=recommendations,
-        intent=intent
-    )
+        formatted_recommendations = (
+            format_recommendations(
+                recommendations
+            )
+        )
 
-    # Format recommendations
-    formatted_recommendations = []
-    for item in recommendations:
-        formatted_recommendations.append({
-            "name": item.get("name", ""),
-            "url": item.get("link", ""),
-            "test_type": map_test_type(
-                item.get("name", ""),
-                item.get("description", "")
-    )
-})
-    return {
-        "reply": response_text,
-        "recommendations": formatted_recommendations,
-        "end_of_conversation": False
-    }
+        response_text = (
+            "Updated shortlist based on your "
+            "additional requirements.\n\n"
+            + generate_response(
+                latest_message,
+                recommendations
+            )
+        )
+
+        return {
+            "reply": response_text,
+            "recommendations": formatted_recommendations,
+            "end_of_conversation": (
+                len(formatted_recommendations) > 0
+            )
+        }
+
+    # STANDARD RECOMMENDATION FLOW
+    else:
+
+        recommendations = recommend_assessments(
+            messages
+        )
+
+        formatted_recommendations = (
+            format_recommendations(
+                recommendations
+            )
+        )
+
+        response_text = generate_response(
+            latest_message,
+            recommendations
+        )
+
+        return {
+            "reply": response_text,
+            "recommendations": formatted_recommendations,
+            "end_of_conversation": (
+                len(formatted_recommendations) > 0
+            )
+        }
