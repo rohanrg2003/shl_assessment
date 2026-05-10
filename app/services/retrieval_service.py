@@ -10,18 +10,22 @@ HIGH_PRIORITY_KEYWORDS = {
     "backend": 4,
     "engineer": 3,
     "developer": 4,
+    "software": 4,
     "programming": 5,
     "coding": 5,
     "technical": 4,
 
     "leadership": 5,
+    "leader": 4,
     "manager": 4,
     "executive": 4,
     "director": 4,
 
     "personality": 5,
+    "behavioral": 5,
     "behavior": 4,
     "motivation": 4,
+    "competency": 4,
     "opq": 5,
 
     "communication": 4,
@@ -58,13 +62,14 @@ def calculate_score(query, searchable_text):
 
     query_words = query.split()
 
+    # BASIC KEYWORD MATCHING
     for word in query_words:
 
         if word in searchable_text:
 
             score += HIGH_PRIORITY_KEYWORDS.get(word, 1)
 
-    # BOOST JAVA / SOFTWARE ROLES
+    # BOOST JAVA / SOFTWARE / BACKEND
     if any(word in query for word in [
         "java",
         "backend",
@@ -86,15 +91,40 @@ def calculate_score(query, searchable_text):
             score += 12
 
     # BOOST PERSONALITY
-    if "personality" in query:
+    if any(word in query for word in [
+        "personality",
+        "behavioral",
+        "behavior",
+        "motivation",
+        "soft skills"
+    ]):
 
         if any(keyword in searchable_text for keyword in [
             "opq",
             "personality",
             "behavior",
-            "motivation"
+            "motivation",
+            "competency",
+            "leadership"
         ]):
-            score += 12
+            score += 18
+
+        # EXTRA BOOST FOR SOFTWARE / TECH ROLES
+        if any(word in query for word in [
+            "software",
+            "developer",
+            "engineer",
+            "technical",
+            "java"
+        ]):
+
+            if any(keyword in searchable_text for keyword in [
+                "opq",
+                "personality",
+                "competency",
+                "behavior"
+            ]):
+                score += 20
 
     # BOOST LEADERSHIP
     if any(word in query for word in [
@@ -112,9 +142,9 @@ def calculate_score(query, searchable_text):
             "executive",
             "leadership report"
         ]):
-            score += 12
+            score += 15
 
-    # BOOST COGNITIVE
+    # BOOST COGNITIVE / REASONING
     if any(word in query for word in [
         "cognitive",
         "reasoning",
@@ -127,7 +157,7 @@ def calculate_score(query, searchable_text):
             "ability",
             "cognitive"
         ]):
-            score += 12
+            score += 15
 
     # BOOST SIMULATIONS
     if any(word in query for word in [
@@ -138,7 +168,7 @@ def calculate_score(query, searchable_text):
     ]):
 
         if "simulation" in searchable_text:
-            score += 10
+            score += 12
 
     # PENALIZE IRRELEVANT ENGINEERING
     for negative in NEGATIVE_KEYWORDS:
@@ -180,6 +210,7 @@ def semantic_search(query, top_k=10):
     )
 
     unique_results = []
+
     seen_names = set()
 
     for _, item in scored_results:
@@ -189,6 +220,7 @@ def semantic_search(query, top_k=10):
         if name not in seen_names:
 
             unique_results.append(item)
+
             seen_names.add(name)
 
         if len(unique_results) >= top_k:
