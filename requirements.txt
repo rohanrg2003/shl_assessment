@@ -6,4 +6,4 @@ numpy
 scikit-learn
 python-dotenv
 groq
-torch==2.2.2
+torch
