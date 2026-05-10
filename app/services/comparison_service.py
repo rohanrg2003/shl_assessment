@@ -20,14 +20,12 @@ def extract_assessment_names(query):
 
         name = item.get("name", "").lower()
 
-        # Exact match
         if name in query:
 
             found.append(item)
 
             continue
 
-        # Partial word match
         for word in name.split():
 
             if len(word) > 3 and word in query:
