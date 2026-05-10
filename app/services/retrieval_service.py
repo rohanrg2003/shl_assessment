@@ -86,15 +86,8 @@ def calculate_score(query, searchable_text):
             score += 12
 
     # BOOST PERSONALITY
-    if "personality" in query:
+    
 
-        if any(keyword in searchable_text for keyword in [
-            "opq",
-            "personality",
-            "behavior",
-            "motivation"
-        ]):
-            score += 12
 
     # BOOST LEADERSHIP
     if any(word in query for word in [
