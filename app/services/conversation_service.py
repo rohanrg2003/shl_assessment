@@ -1,8 +1,7 @@
 from app.utils.intent_detector import detect_intent
 
-# CHANGE THIS IMPORT TO MATCH YOUR ACTUAL FUNCTION
 from app.services.recommendation_service import (
-    get_recommendations
+    generate_recommendations
 )
 
 from app.services.comparison_service import (
@@ -11,6 +10,10 @@ from app.services.comparison_service import (
 
 from app.services.llm_service import (
     generate_response
+)
+
+from app.utils.constraint_extractor import (
+    extract_constraints
 )
 
 from app.utils.test_type_mapper import (
@@ -98,11 +101,16 @@ def process_conversation(messages):
             "end_of_conversation": True
         }
 
-    # REFINE FLOW
-    elif intent == "REFINE":
+    # RECOMMENDATION / REFINE FLOW
+    else:
 
-        recommendations = get_recommendations(
+        constraints = extract_constraints(
             messages
+        )
+
+        recommendations = generate_recommendations(
+            latest_message,
+            constraints
         )
 
         formatted_recommendations = (
@@ -111,40 +119,23 @@ def process_conversation(messages):
             )
         )
 
-        response_text = (
-            "Updated shortlist based on your "
-            "additional requirements.\n\n"
-            + generate_response(
+        if intent == "REFINE":
+
+            response_text = (
+                "Updated shortlist based on your "
+                "additional requirements.\n\n"
+                + generate_response(
+                    latest_message,
+                    recommendations
+                )
+            )
+
+        else:
+
+            response_text = generate_response(
                 latest_message,
                 recommendations
             )
-        )
-
-        return {
-            "reply": response_text,
-            "recommendations": formatted_recommendations,
-            "end_of_conversation": (
-                len(formatted_recommendations) > 0
-            )
-        }
-
-    # STANDARD RECOMMENDATION FLOW
-    else:
-
-        recommendations = get_recommendations(
-            messages
-        )
-
-        formatted_recommendations = (
-            format_recommendations(
-                recommendations
-            )
-        )
-
-        response_text = generate_response(
-            latest_message,
-            recommendations
-        )
 
         return {
             "reply": response_text,
